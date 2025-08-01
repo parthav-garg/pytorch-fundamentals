@@ -1,17 +1,17 @@
 import torch
 import torch.nn as nn
-
-content = ""
-with open("nanogpt/input.txt", "r") as file:
-    content = file.read()
-
+import numpy as np
+#content = ""
+#with open("nanogpt/input.txt", "r") as file:
+#    content = file.read()
+content =np.arange(10000) 
 vocab = sorted(list(set(content)))
 vocab_size = len(vocab)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 stoi = { ch: i for i, ch in enumerate(vocab) }
 itos = { i: ch for i, ch in enumerate(vocab) }
 encode = lambda x: [stoi[ch] for ch in x]
-decode = lambda x: "".join([itos[i] for i in x])
+decode = lambda x: ",".join([str(itos[i]) for i in x])
 data = torch.tensor(encode(content), dtype=torch.long)
 n = int(len(data) * .9)
 train_data = data[:n]
@@ -19,7 +19,7 @@ val_data = data[n:]
 torch.manual_seed(1337)
 
 n_embd = 128
-seq_len = 256
+seq_len = 16
 batch_size = len(train_data) // seq_len
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -48,7 +48,7 @@ class GPT(nn.Module):
         self.encoding = nn.Embedding(vocab_size, n_embd)
     
     def forward(self, x):
-        return self.rnn(self.encoding(x))
+        return self.rnn(x)
 
 def get_batch(split, time = 0):
     data = train_data if split == "train" else val_data
@@ -72,15 +72,16 @@ def train(model, epochs=10):
     optim = torch.optim.AdamW(model.parameters(), lr=0.001)
     model.to(torch.device("cuda"))
     time = 0
-    while time < len(train_data) - seq_len - 1 and time < 250:
+    while time < len(train_data) - seq_len - 1 and time < 10000:
         xb, yb = get_batch("train", time)
+        
         logits= model(xb)
         loss = criterion(logits.view(-1, logits.size(-1)), yb.view(-1))
         optim.zero_grad()
         loss.backward()
         optim.step()
         time += 1
-        if time % 1 == 0:
+        if time % 100 == 0:
             print(f"Epoch , Step {time}, Loss: {loss.item()}")
     torch.save(model.state_dict(), "savez/rnn_model.pth")
 model = GPT()
@@ -90,26 +91,24 @@ def generate(model, start_str, max_new_tokens):
     model.eval()
     
     input_ids = torch.tensor([stoi[ch] for ch in start_str], dtype=torch.long).unsqueeze(0).to(device)  # shape (1, len)
-    hidden = torch.zeros(1, model.rnn.hidden_size).to(device)
-
-    for _ in range(max_new_tokens):
-        # Take only the last token and embed it
-        last_token = input_ids[:, -1]  # shape (1,)
-        emb = model.encoding(last_token)  # shape (1, emb_dim)
-
-        # Forward one step manually
-        h = torch.tanh(model.rnn.Wx(emb) + model.rnn.Wh(hidden))  # (1, hidden_size)
-        logits = model.rnn.Wy(h)  # (1, vocab_size)
-        probs = torch.softmax(logits, dim=-1)
-
-        next_id = torch.multinomial(probs, num_samples=1)  # shape (1, 1)
-        input_ids = torch.cat([input_ids, next_id], dim=1)
-        hidden = h  # update hidden state
-
-    return decode(input_ids[0].tolist())
+    print(input_ids)
+    outputs = []
+    
+    logits = model(input_ids)  # shape (1, len, vocab_size)
+    print(logits.shape)
+    probs = torch.softmax(logits, dim=-1).reshape(-1, logits.size(-1))  # shape (1*len, vocab_size)
+    print(probs.shape)
+    next_token = torch.multinomial(probs, num_samples=1)  # shape (1, 1)
+    print(next_token.shape)
+    outputs.extend(next_token.tolist())
+    input_ids = next_token
+    print([x[0] for x in outputs])
+    return decode([x[0] for x in outputs])
 if __name__ == "__main__":
     if torch.cuda.is_available():
         print("Training on GPU")
-    train(model)
+    #train(model)
+    model.load_state_dict(torch.load("savez/rnn_model.pth"))
+    model.to(device)
     print("\nGenerated Text:\n")
-    print(generate(model, start_str="T", max_new_tokens=200))
+    print(generate(model, start_str=np.arange(9000, 9000 + 16), max_new_tokens=200))
