@@ -1,0 +1,24 @@
+Title	
+Mamba/s6.py(169): forward 🔍
+Category	python_function
+User Friendly Category	other
+Start	
+0.818 ms
+Wall Duration	
+63.239 ms
+Self Time	
+0.334 ms
+
+Title	
+Mamba/s6.py(144): _ssm_scan 🔍
+Category	python_function
+User Friendly Category	other
+Start	
+1.643 ms
+Wall Duration	
+61.996 ms
+Self Time	
+14.812 ms
+
+
+non_scan_time = 1.243 ms
