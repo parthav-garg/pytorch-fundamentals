@@ -86,7 +86,7 @@ dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=
 
 
 class MambaBlock(nn.Module):
-    def __init__(self, d_model: int, d_state: int = 16, d_conv_kernel: int = 4, expand_factor: int = 2):
+    def __init__(self, d_model: int, d_state: int = 16, d_conv_kernel: int = 5, expand_factor: int = 2):
         super(MambaBlock, self).__init__()
         self.d_model = d_model
         self.d_state = d_state
@@ -133,7 +133,7 @@ class MambaBlock(nn.Module):
         A_bar = torch.exp(delta_A)
 
         B_bar_frac = torch.special.expm1(delta_A) / (delta_A + 1e-6)
-        B_bar = B_bar_frac * Delta_exp * B_exp y
+        B_bar = B_bar_frac * Delta_exp * B_exp 
         return A_bar, B_bar
 
     @staticmethod

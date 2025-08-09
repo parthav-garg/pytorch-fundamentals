@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 print(f"Using device: {device}")
 
 class ECG_CNN(nn.Module):
@@ -285,7 +286,7 @@ def main():
     final_accuracy = evaluate_model(model, test_loader, label_encoder)
     
     # Plot training history
-    plot_training_history(train_losses, train_accuracies, test_accuracies)
+    #plot_training_history(train_losses, train_accuracies, test_accuracies)
     
     # Save model
     torch.save(model.state_dict(), 'savez/ecg5000_cnn_model.pth')
@@ -298,7 +299,7 @@ def run():
         input_length = X.shape[2]  # sequence length
         num_classes = len(np.unique(y))
         model = ECG_CNN(input_length=input_length, num_classes=num_classes).to(device)
-        model.load_state_dict(torch.load('ecg5000_cnn_model.pth'))
+        model.load_state_dict(torch.load('savez/ecg5000_cnn_model.pth'))
         _, test_loader = create_data_loaders(X, y, batch_size=64)
         final_accuracy = evaluate_model(model, test_loader, label_encoder)
         print(f"Final Test Accuracy: {final_accuracy:.4f}")
@@ -306,4 +307,3 @@ def run():
 
 if __name__ == "__main__":
     main()
-    run()
